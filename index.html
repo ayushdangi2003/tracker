@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="theme-color" content="#0f172a" />
+  <link rel="manifest" href="manifest.json" />
+  <title>HabitAgent</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --card: #1e293b;
+      --card-2: #0b1220;
+      --text: #f8fafc;
+      --muted: #94a3b8;
+      --accent: #38bdf8;
+      --accent-2: #22c55e;
+      --danger: #f87171;
+      --border: #334155;
+    }
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      padding-bottom: 84px;
+    }
+    .hidden { display: none !important; }
+    #lockScreen {
+      position: fixed;
+      inset: 0;
+      z-index: 50;
+      background: var(--bg);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .lock-box {
+      width: 100%;
+      max-width: 360px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 20px;
+      text-align: center;
+    }
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      background: rgba(15, 23, 42, 0.92);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+      padding: 14px 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+    }
+    h1 { font-size: 18px; margin: 0; font-weight: 700; }
+    .sub { font-size: 12px; color: var(--muted); }
+    main { padding: 14px 16px; max-width: 640px; margin: 0 auto; }
+    .panel { display: none; }
+    .panel.active { display: block; }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 14px;
+      margin-bottom: 12px;
+    }
+    label { display: block; font-size: 12px; color: var(--muted); margin-bottom: 6px; text-align: left; }
+    input, textarea, select {
+      width: 100%;
+      background: var(--card-2);
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 11px 12px;
+      font-size: 15px;
+      font-family: inherit;
+    }
+    textarea { min-height: 130px; line-height: 1.45; resize: vertical; }
+    .row { display: flex; gap: 8px; }
+    .row > * { flex: 1; }
+    button {
+      background: var(--accent);
+      color: #06131e;
+      border: none;
+      border-radius: 10px;
+      padding: 11px 14px;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    button.secondary {
+      background: var(--card-2);
+      color: var(--text);
+      border: 1px solid var(--border);
+      font-weight: 600;
+    }
+    button.success { background: var(--accent-2); color: #052e16; }
+    button.danger { background: transparent; color: var(--danger); border: 1px solid rgba(248,113,113,0.35); padding: 6px 10px; font-size: 12px; }
+    button:disabled { opacity: 0.5; cursor: not-allowed; }
+    .task-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 0;
+      border-bottom: 1px solid rgba(148, 163, 184, 0.14);
+    }
+    .task-item:last-child { border-bottom: none; }
+    .task-item input[type="checkbox"] {
+      width: 20px; height: 20px; accent-color: var(--accent-2); flex: none;
+    }
+    .task-title { font-size: 15px; font-weight: 500; }
+    .task-title.done { text-decoration: line-through; color: var(--muted); }
+    .meta { font-size: 12px; color: var(--muted); margin-top: 2px; }
+    .pill {
+      display: inline-block;
+      font-size: 11px;
+      padding: 2px 8px;
+      border-radius: 999px;
+      background: rgba(56, 189, 248, 0.15);
+      color: var(--accent);
+      margin-right: 6px;
+    }
+    .pill.ok { background: rgba(34, 197, 94, 0.16); color: #4ade80; }
+    .status-box {
+      font-size: 13px;
+      color: var(--muted);
+      background: var(--card-2);
+      border: 1px dashed var(--border);
+      border-radius: 10px;
+      padding: 10px 12px;
+      margin-top: 10px;
+      white-space: pre-wrap;
+    }
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+    .stat-num { font-size: 24px; font-weight: 800; color: var(--accent); }
+    .bar-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; font-size: 12px; }
+    .bar-track { flex: 1; height: 10px; background: var(--card-2); border-radius: 999px; overflow: hidden; }
+    .bar-fill { height: 100%; background: var(--accent-2); }
+    nav {
+      position: fixed;
+      bottom: 0; left: 0; right: 0;
+      background: rgba(15, 23, 42, 0.96);
+      backdrop-filter: blur(12px);
+      border-top: 1px solid var(--border);
+      display: flex;
+      padding-bottom: env(safe-area-inset-bottom);
+    }
+    nav button {
+      flex: 1;
+      background: transparent;
+      color: var(--muted);
+      border-radius: 0;
+      padding: 12px 6px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+    nav button.active { color: var(--accent); border-top: 2px solid var(--accent); }
+  </style>
+</head>
+<body>
+  <!-- PIN LOCK SCREEN -->
+  <div id="lockScreen" class="hidden">
+    <div class="lock-box">
+      <h1 style="margin-bottom: 6px;">HabitAgent Locked</h1>
+      <div class="sub" style="margin-bottom: 14px;">Enter your PIN to view tasks and calendar</div>
+      <input id="pinInput" type="password" inputmode="numeric" maxlength="8" placeholder="Enter PIN" style="text-align: center; letter-spacing: 6px; font-size: 20px;" />
+      <button id="unlockBtn" style="width: 100%; margin-top: 12px;">Unlock</button>
+      <div class="sub" id="lockError" style="color: var(--danger); margin-top: 10px; min-height: 16px;"></div>
+    </div>
+  </div>
+
+  <header id="appHeader">
+    <div>
+      <h1>HabitAgent</h1>
+      <div class="sub" id="calStatus">Calendar: Not connected</div>
+    </div>
+    <div style="display: flex; gap: 6px;">
+      <button class="secondary" id="connectCalBtn" style="padding: 8px 10px; font-size: 12px;">GCal</button>
+      <button class="secondary" id="lockNowBtn" style="padding: 8px 10px; font-size: 12px;">Lock</button>
+    </div>
+  </header>
+
+  <main id="appMain">
+    <!-- TAB 1: TASKS & SCHEDULER -->
+    <section id="tab-tasks" class="panel active">
+      <div class="card">
+        <label for="taskInput">Add a task, habit, or skill to practice</label>
+        <input id="taskInput" type="text" placeholder="e.g., Read 20 pages of book" />
+        <div class="row" style="margin-top: 8px;">
+          <div>
+            <label for="taskMins">Minutes</label>
+            <input id="taskMins" type="number" value="30" min="5" max="360" step="5" />
+          </div>
+          <div>
+            <label for="taskArea">Focus area</label>
+            <input id="taskArea" type="text" placeholder="reading, coding, fitness" />
+          </div>
+        </div>
+        <button id="addTaskBtn" style="width: 100%; margin-top: 10px;">Add to Tracker</button>
+      </div>
+
+      <div class="card">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+          <strong>Unscheduled & Active Items</strong>
+          <button class="success" id="scheduleBtn" style="padding: 8px 12px; font-size: 13px;">Auto-Schedule with AI</button>
+        </div>
+        <div id="taskList"></div>
+        <div class="status-box" id="agentLog">Add tasks, connect Google Calendar if you want events placed automatically, and tap "Auto-Schedule with AI".</div>
+      </div>
+    </section>
+
+    <!-- TAB 2: CONSISTENCY -->
+    <section id="tab-stats" class="panel">
+      <div class="stats-grid">
+        <div class="card" style="margin: 0;">
+          <div class="sub">Current Streak</div>
+          <div class="stat-num" id="streakDays">0d</div>
+        </div>
+        <div class="card" style="margin: 0;">
+          <div class="sub">Completed Total</div>
+          <div class="stat-num" id="totalDone">0</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <strong style="display: block; margin-bottom: 10px;">Last 7 Days Completion</strong>
+        <div id="weekBars"></div>
+      </div>
+
+      <div class="card">
+        <strong style="display: block; margin-bottom: 8px;">Data Backup (Local JSON)</strong>
+        <div class="row">
+          <button class="secondary" id="exportBtn">Export JSON</button>
+          <button class="secondary" id="importTriggerBtn">Import JSON</button>
+          <input type="file" id="importFile" accept="application/json" style="display: none;" />
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 3: AI RULES & KEYS -->
+    <section id="tab-rules" class="panel">
+      <div class="card">
+        <label for="rulesInput">Your AI Calendar Instructions (evolves over time)</label>
+        <textarea id="rulesInput"></textarea>
+        <label for="feedbackInput" style="margin-top: 10px;">What should change? (AI rewrites rules cleanly from feedback)</label>
+        <input id="feedbackInput" type="text" placeholder="e.g., Don't put coding after 9 PM; keep 20m buffers" />
+        <div class="row" style="margin-top: 8px;">
+          <button id="saveRulesBtn">Save Rules</button>
+          <button class="secondary" id="refineRulesBtn">Refine with AI</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <label for="newPinInput">App Lock PIN (4-8 digits, stored locally on this phone)</label>
+        <input id="newPinInput" type="password" inputmode="numeric" maxlength="8" placeholder="Set or change PIN" />
+        <div class="row" style="margin-top: 8px;">
+          <button class="secondary" id="savePinBtn">Save / Update PIN</button>
+          <button class="danger" id="clearPinBtn" style="padding: 11px 12px;">Disable PIN</button>
+        </div>
+        <div class="sub" id="pinStatusText" style="margin-top: 8px;">PIN lock: Off</div>
+      </div>
+
+      <div class="card">
+        <label for="geminiKeyInput">Gemini API Key (Free tier via Google AI Studio)</label>
+        <input id="geminiKeyInput" type="password" placeholder="AIza..." />
+        <label for="gcalClientIdInput" style="margin-top: 10px;">Google OAuth Client ID (Web application)</label>
+        <input id="gcalClientIdInput" type="text" placeholder="...apps.googleusercontent.com" />
+        <label for="tzInput" style="margin-top: 10px;">Time Zone</label>
+        <input id="tzInput" type="text" value="Asia/Kolkata" />
+        <button class="secondary" id="saveKeysBtn" style="width: 100%; margin-top: 10px;">Save Keys Locally</button>
+      </div>
+    </section>
+  </main>
+
+  <nav id="appNav">
+    <button class="active" data-tab="tab-tasks">Tasks</button>
+    <button data-tab="tab-stats">Consistency</button>
+    <button data-tab="tab-rules">Rules & Keys</button>
+  </nav>
+
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+  <script src="app.js"></script>
+</body>
+</html>
